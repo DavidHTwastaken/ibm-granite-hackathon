@@ -1,21 +1,24 @@
 import os, glob, fnmatch
 import mimetypes
+from pathspec.patterns import GitWildMatchPattern
+from pathspec import PathSpec
 
 class ProjectCompiler:
     def __init__(self, directory):
         self.root_dir = directory
-        self.gitignore = self.read_gitignore()
+        self.gitignores_spec = self.compile_gitignores()
 
-    def read_gitignore(self, gitignore_file='.gitignore'):
-        gitignore_file = os.path.join(self.root_dir, gitignore_file)
-        # Check if the .gitignore file exists
-        if not os.path.isfile(gitignore_file):
-            print(f"Warning: {gitignore_file} not found. No files will be ignored.")
-            return []
-        # Read the .gitignore file and return a list of patterns to ignore
-        with open(gitignore_file, 'r') as f:
-            patterns = [line.strip() for line in f if line.strip() and not line.startswith('#')]
-        return patterns
+    def compile_gitignores(self):
+        # Recursively find all .gitignore files in the directory and subdirectories
+        gitignore_files = glob.glob(os.path.join(self.root_dir, '**', '.gitignore'), recursive=True)
+        # Read each .gitignore file and compile the patterns
+        all_patterns = []
+        for gitignore_file in gitignore_files:
+            with open(gitignore_file, 'r') as f:
+                lines = f.readlines()
+            spec = PathSpec.from_lines(GitWildMatchPattern, lines)
+            all_patterns.extend(spec.patterns)
+        return PathSpec(all_patterns)
 
     # Given a list of files, compile them into a single text file
     def compile_files(self, files, output_file):
@@ -27,11 +30,8 @@ class ProjectCompiler:
                     outfile.write("\n")  # Add a newline between files
 
     def is_not_gitignored(self, filename):
-        # Check if the file matches any patterns in the .gitignore file
-        for pattern in self.gitignore:
-            if fnmatch.fnmatch(filename, pattern):
-                return False
-        return True
+        # Check if the file matches any patterns in any .gitignore file
+        return not self.gitignores_spec.match_file(filename)
 
     def is_text_file(self, filename):
         # Check if the file is a text file based on its MIME type
