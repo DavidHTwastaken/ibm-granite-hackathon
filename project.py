@@ -24,10 +24,13 @@ class ProjectCompiler:
     def compile_files(self, files, output_file):
         with open(output_file, 'w') as outfile:
             for file in files:
-                with open(file, 'r') as infile:
-                    # Read the content and write it to the output file
-                    outfile.write(f'{file}\n{infile.read()}')
-                    outfile.write("\n")  # Add a newline between files
+                try:
+                    with open(file, 'r') as infile:
+                        # Read the content and write it to the output file
+                        outfile.write(f'{file}\n{infile.read()}')
+                        outfile.write("\n")  # Add a newline between files
+                except UnicodeDecodeError:
+                    continue # Skip files that can't be decoded as text
 
     def is_not_gitignored(self, filename):
         # Check if the file matches any patterns in any .gitignore file
@@ -40,29 +43,42 @@ class ProjectCompiler:
 
     def is_valid_file(self, filename):
         # Use all checks
-        checks = [os.path.isfile, self.is_text_file, self.is_not_gitignored]
+        checks = [self.is_not_gitignored]
         return all(check(filename) for check in checks)
 
     # Compile all files into a single text file
-    def project_to_txt(self, output_file):
+    def project_to_txt(self, output_file, verbose=False):
         # Get all files in directory and subdirectories
         # Use glob to find all files in the directory
         directory = self.root_dir
-        files = glob.glob(os.path.join(directory, '**'), recursive=True) # TODO: requires optimization
+        # files = glob.glob(os.path.join(directory, '**'), recursive=True) # TODO: requires optimization
 
         valid_files = []
-        # Iterate through each file
-        for filename in files:
-            # Check type
-            valid = self.is_valid_file(filename)
-            if valid:
-                valid_files.append(filename)
-                print(f"Processing text file: {filename}")
-            else:
-                print(f"Skipping non-text file: {filename}")
-                continue
+        for dirpath, dirnames, filenames in os.walk(directory):
+            rel_dir = os.path.relpath(dirpath, directory)
+            if rel_dir == '.':
+                rel_dir = ''  # so that os.path.join works cleanly
+                pruned = []
+            for d in dirnames:
+                # Build the relative path spec expects (directory paths end with slash)
+                candidate = os.path.join(rel_dir, d) + '/'
+                if self.gitignores_spec.match_file(candidate) or candidate.__contains__('.git'):
+                    # this subdirectory is ignored → skip descending into it
+                    continue
+                pruned.append(d)
+            dirnames[:] = pruned
+        
+            for filename in filenames:
+                candidate = os.path.join(dirpath, filename)
+                valid = self.is_valid_file(candidate)
+                if valid:
+                    valid_files.append(candidate)
+                    print(f"Processing text file: {candidate}") if verbose else None
+                else:
+                    print(f"Skipping non-text file: {candidate}") if verbose else None
+                    continue
         # Compile the valid files into a single text file
-        self.compile_files(valid_files, output_file)        
+        self.compile_files(valid_files, output_file)  
 
 def main():
     # Testing on project_dir
