@@ -1,3 +1,4 @@
+import requests
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 import time
@@ -36,14 +37,81 @@ def generate_doc(project):
     print(f"Generation time: {time_gen:.2f}s")
     return output
 
+def generate_doc_ibm(project):
+    url = "https://us-south.ml.cloud.ibm.com/ml/v1/text/generation?version=2023-05-29"
+
+    body = {
+        "input": f"""Create a markdown document explaining the following project. The format of the input will be the file path of a file, followed by its content, for each file in the project. 
+    Input: {project}
+    Output:""",
+        "parameters": {
+            "decoding_method": "greedy",
+            "max_new_tokens": 200,
+            "min_new_tokens": 0,
+            "repetition_penalty": 1
+        },
+        "model_id": "ibm/granite-3-8b-instruct",
+        "project_id": "c935f587-0211-4cd0-ac69-fa7f889f8a6a",
+        "moderations": {
+            "hap": {
+                "input": {
+                    "enabled": True,
+                    "threshold": 0.5,
+                    "mask": {
+                        "remove_entity_value": True
+                    }
+                },
+                "output": {
+                    "enabled": True,
+                    "threshold": 0.5,
+                    "mask": {
+                        "remove_entity_value": True
+                    }
+                }
+            },
+            "pii": {
+                "input": {
+                    "enabled": True,
+                    "threshold": 0.5,
+                    "mask": {
+                        "remove_entity_value": True
+                    }
+                },
+                "output": {
+                    "enabled": True,
+                    "threshold": 0.5,
+                    "mask": {
+                        "remove_entity_value": True
+                    }
+                }
+            }
+        }
+    }
+
+    headers = {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+        "Authorization": "Bearer YOUR_ACCESS_TOKEN"
+    }
+
+    response = requests.post(
+        url,
+        headers=headers,
+        json=body
+    )
+
+    if response.status_code != 200:
+        raise Exception("Non-200 response: " + str(response.text))
+
+    data = response.json()
+    return data
+
 def main():
     start = time.time()
     project = open('tmp.txt', 'r').read()
     load_time = time.time() - start
-    output = generate_doc(project)
+    output = generate_doc_ibm(project)
     print(f"Load project time: {load_time:.2f}s")
-    for i in output:
-        print(i)
 
 if __name__ == '__main__':
     main()
