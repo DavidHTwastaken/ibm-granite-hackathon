@@ -2,116 +2,102 @@ import requests
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 import time
+from access import TOKEN
 
-def generate_doc(project):
-    start_load_models = time.time()
-    device = "cpu"  # or "cpu"
-    # "ibm-granite/granite-8b-code-instruct-4k"
-    model_path = 'ibm-granite/granite-3b-code-instruct-2k'
-    tokenizer = AutoTokenizer.from_pretrained(model_path)
-    # drop device_map if running on CPU
-    model = AutoModelForCausalLM.from_pretrained(model_path)
-    model.eval()
-    time_load_models = time.time() - start_load_models
-    start_gen = time.time()
-    # change input text as desired
-    chat = [
-        {"role": "user", 
-        "content": f'Create a markdown document explaining the following project. \
-            I will provide the file paths followed by their content. Here is the project:\n {project}'},
-    ]
-    chat = tokenizer.apply_chat_template(
-        chat, tokenize=False, add_generation_prompt=True)
-    # tokenize the text
-    input_tokens = tokenizer(chat, return_tensors="pt")
-    # transfer tokenized inputs to the device
-    for i in input_tokens:
-        input_tokens[i] = input_tokens[i].to(device)
-    # generate output tokens
-    output = model.generate(**input_tokens, max_new_tokens=100)
-    # decode output tokens into text
-    output = tokenizer.batch_decode(output)
-    # loop over the batch to print, in this example the batch size is 1
-    time_gen = time.time() - start_gen
-    print(f"Load models time: {time_load_models:.2f}s")
-    print(f"Generation time: {time_gen:.2f}s")
-    return output
+import json
+from ibm_watsonx_ai import APIClient
+from ibm_watsonx_ai.foundation_models import ModelInference
+from ibm_watsonx_ai.metanames import GenTextParamsMetaNames as GenParams
+from ibm_watsonx_ai.foundation_models.utils.enums import DecodingMethods
 
-def generate_doc_ibm(project):
-    url = "https://us-south.ml.cloud.ibm.com/ml/v1/text/generation?version=2023-05-29"
+my_credentials = {
+    "url": "https://us-south.ml.cloud.ibm.com",
+    "api_key": TOKEN,
+}
+print(TOKEN)
+client = APIClient(my_credentials)
 
-    body = {
-        "input": f"""Create a markdown document explaining the following project. The format of the input will be the file path of a file, followed by its content, for each file in the project. 
-    Input: {project}
-    Output:""",
-        "parameters": {
-            "decoding_method": "greedy",
-            "max_new_tokens": 200,
-            "min_new_tokens": 0,
-            "repetition_penalty": 1
-        },
-        "model_id": "ibm/granite-3-8b-instruct",
-        "project_id": "c935f587-0211-4cd0-ac69-fa7f889f8a6a",
-        "moderations": {
-            "hap": {
-                "input": {
-                    "enabled": True,
-                    "threshold": 0.5,
-                    "mask": {
-                        "remove_entity_value": True
-                    }
-                },
-                "output": {
-                    "enabled": True,
-                    "threshold": 0.5,
-                    "mask": {
-                        "remove_entity_value": True
-                    }
-                }
-            },
-            "pii": {
-                "input": {
-                    "enabled": True,
-                    "threshold": 0.5,
-                    "mask": {
-                        "remove_entity_value": True
-                    }
-                },
-                "output": {
-                    "enabled": True,
-                    "threshold": 0.5,
-                    "mask": {
-                        "remove_entity_value": True
-                    }
-                }
-            }
-        }
-    }
+gen_parms = {
+    GenParams.DECODING_METHOD: DecodingMethods.SAMPLE,
+    GenParams.MAX_NEW_TOKENS: 100
+}
+model_id = "ibm/granite-3-8b-instruct"
+project_id = "c935f587-0211-4cd0-ac69-fa7f889f8a6a"
+space_id = None
+verify = False
 
-    headers = {
-        "Accept": "application/json",
-        "Content-Type": "application/json",
-        "Authorization": "Bearer YOUR_ACCESS_TOKEN"
-    }
+model = ModelInference(
+    model_id=model_id,
+    credentials=my_credentials,
+    params=gen_parms,
+    project_id=project_id,
+    space_id=space_id,
+    verify=verify,
+)
 
-    response = requests.post(
-        url,
-        headers=headers,
-        json=body
-    )
+def generate_doc(project, format='markdown', description=''):
+    instruction = f'Create a {format} document explaining the following project. The format of the input will be the file path of a file, followed by its content, for each file in the project.'
+    if len(description) > 0:
+        instruction += f'Here is some additional context: {description}'
+    prompt = f'{instruction}\nInput:\n{project}'
+    generated_text_response = model.generate_text(
+        prompt=prompt, params=gen_parms)
 
-    if response.status_code != 200:
-        raise Exception("Non-200 response: " + str(response.text))
+    print("Output from generate_text() method:")
+    print(generated_text_response)
+    return generated_text_response
 
-    data = response.json()
-    return data
 
 def main():
-    start = time.time()
-    project = open('tmp.txt', 'r').read()
-    load_time = time.time() - start
-    output = generate_doc_ibm(project)
-    print(f"Load project time: {load_time:.2f}s")
+    # start = time.time()
+    # project = open('tmp.txt', 'r').read()
+    # load_time = time.time() - start
+
+    project = '''
+    backend/app.js 
+    app.get("/api/login", (req, res) => {
+  const params = querystring.stringify({
+    client_id: process.env.SPOTIFY_CLIENT_ID,
+    response_type: "code",
+    redirect_uri: process.env.SPOTIFY_REDIRECT_URI,
+    scope: "user-top-read user-read-recently-played",
+  });
+
+  res.redirect(`${SPOTIFY_AUTH_URL}?${params}`);
+});
+
+app.get("/api/callback", async (req, res) => {
+  // console.log(req.query)
+  // console.log(req.session)
+  const code = req.query.code;
+  if (!code) return res.redirect("http://localhost:5173/?error=login_failed");
+
+  try {
+    const response = await axios.post(
+      SPOTIFY_TOKEN_URL,
+      querystring.stringify({
+        grant_type: "authorization_code",
+        code,
+        redirect_uri: process.env.SPOTIFY_REDIRECT_URI,
+        client_id: process.env.SPOTIFY_CLIENT_ID,
+        client_secret: process.env.SPOTIFY_CLIENT_SECRET,
+      }),
+      { headers: { "Content-Type": "application/x-www-form-urlencoded" } }
+    );
+    req.session.access_token = response.data.access_token;
+    // console.log(response.data)
+    req.session.refresh_token = response.data.refresh_token;
+    res.redirect("http://localhost:5173/hof");
+  } catch (error) {
+    console.error(
+      "Error getting tokens:",
+      error.response ? error.response.data : error
+    );
+    res.redirect("http://localhost:5173/?error=token_error");
+  }
+});
+'''
+    output = generate_doc(project)
 
 if __name__ == '__main__':
     main()
