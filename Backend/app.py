@@ -4,6 +4,8 @@ import shutil
 from flask import Flask, jsonify, render_template, request
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
+import subprocess
+from models import audio, doc
 
 app = Flask(__name__)
 CORS(app)
@@ -112,8 +114,22 @@ def audio_input():
         return jsonify(error="File type not allowed"), 400
 
     filename = secure_filename(file.filename)
+    tmp_save_path = os.path.join(app.config['UPLOAD_FOLDER'], 'tmp_', filename)
     save_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-    file.save(save_path)
+
+    file.save(tmp_save_path)
+
+    # Convert audio to desired format
+    result = subprocess.run([
+        "ffmpeg",
+        "-i", tmp_save_path,
+        "-ar", "16000",
+        "-ac", "1",
+        "-c:a", "pcm_s16le",
+        '-sample_fmt', 's16',
+        save_path
+    ], capture_output=True, text=True)
+    os.remove(tmp_save_path)
 
     return jsonify(success=True, filename=filename), 200
 
@@ -138,6 +154,7 @@ def zip_file():
 @app.route('/generate', methods=['POST'])
 def generate():
     # Placeholder for backend generation logic
+
     return jsonify(message="Generate endpoint reached!"), 200
   
   

@@ -1,6 +1,3 @@
-import requests
-import torch
-from transformers import AutoModelForCausalLM, AutoTokenizer
 import time
 from access import TOKEN
 
