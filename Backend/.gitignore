@@ -1,3 +1,5 @@
 # local temp files
-/backend/zipped-Code/*
-/backend/AudioUploads/*
+zipped-Code/
+AudioUploads/
+project_dir/
+transcript.json
