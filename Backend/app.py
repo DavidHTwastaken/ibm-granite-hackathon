@@ -5,8 +5,12 @@ from flask import Flask, jsonify, render_template, request
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
 import subprocess
-from models import audio, doc
-
+from project import ProjectCompiler
+import tempfile
+import zipfile
+if os.environ.get('DRY') == None:
+    from models.doc import generate_doc
+    from models.audio import audio_to_text
 app = Flask(__name__)
 CORS(app)
 
@@ -113,11 +117,11 @@ def audio_input():
     if not allowed_audio_file(file.filename):
         return jsonify(error="File type not allowed"), 400
 
-    filename = secure_filename(file.filename)
-    tmp_save_path = os.path.join(app.config['UPLOAD_FOLDER'], 'tmp_', filename)
-    save_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-
-    file.save(tmp_save_path)
+    with tempfile.NamedTemporaryFile(suffix=".wav", delete=False, dir=app.config['UPLOAD_FOLDER']) as temp_audio:
+        audio_path = temp_audio.name
+        file.save(audio_path)
+    tmp_save_path = os.path.join(audio_path)
+    save_path = os.path.join(audio_path.replace('.wav', '_converted.wav'))
 
     # Convert audio to desired format
     result = subprocess.run([
@@ -130,8 +134,10 @@ def audio_input():
         save_path
     ], capture_output=True, text=True)
     os.remove(tmp_save_path)
-
-    return jsonify(success=True, filename=filename), 200
+    # process audio
+    transcript = audio_to_text(save_path)
+    os.remove(save_path)
+    return jsonify(success=True, transcript=transcript), 200
 
 @app.route('/zip-file', methods=['POST'])
 def zip_file():
@@ -153,9 +159,44 @@ def zip_file():
 
 @app.route('/generate', methods=['POST'])
 def generate():
-    # Placeholder for backend generation logic
+    # process zip file
+    if 'zipFile' not in request.files:
+        return jsonify(error="No zip file part"), 400
 
-    return jsonify(message="Generate endpoint reached!"), 200
+    project = request.files['zipFile']
+    if project.filename == '':
+        return jsonify(error="No selected file"), 400
+
+    if not allowed_zip_file(project.filename):
+        return jsonify(error="Only .zip files allowed"), 400
+
+    with tempfile.NamedTemporaryFile(suffix=".zip", delete=False, dir=ZIP_DIR) as temp_zip:
+        zip_path = temp_zip.name
+        project.save(zip_path)
+    
+    with tempfile.TemporaryDirectory(dir=ZIP_DIR, delete=False) as temp_dir:
+        with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+            zip_ref.extractall(temp_dir)
+        os.remove(zip_path)
+
+    # Compile the project files into a single text file
+    output_file = os.path.join(temp_dir, 'compiled_project.txt')
+    pc = ProjectCompiler(temp_dir)
+    pc.project_to_txt(output_file, verbose=True)
+    
+    # zip_filename = secure_filename(project.filename)
+    # save_path = os.path.join(ZIP_DIR, zip_filename)
+    # project.save(save_path)
+
+    # process transcript
+    if 'transcript' not in request.form:
+        return jsonify(error="No transcript part"), 400
+
+    project = request.form['transcript']
+    
+    # run the generate_doc function
+    doc = generate_doc(project, description=output_file)
+    return jsonify(output=doc), 200
   
   
 if __name__ == '__main__':

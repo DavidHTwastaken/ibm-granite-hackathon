@@ -14,8 +14,7 @@ speech_granite = AutoModelForSpeechSeq2Seq.from_pretrained(
     model_name).to(device)
 
 # prepare speech and text prompt, using the appropriate prompt template
-def audio_to_text():
-    audio_path = os.path.join('..', 'AudioUploads', 'recording.wav')
+def audio_to_text(audio_path)->str:
     wav, sr = torchaudio.load(audio_path, normalize=True)
     assert wav.shape[0] == 1 and sr == 16000  # mono, 16khz
 

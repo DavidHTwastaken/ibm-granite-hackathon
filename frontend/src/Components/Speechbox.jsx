@@ -2,16 +2,15 @@ import React, { useState, useEffect, useRef } from "react";
 
 const API_BASE = "http://localhost:5000";
 
-export default function Speechbox() {
-  const [transcript, setTranscript] = useState("");
+export default function Speechbox({ transcript, setTranscript }) {
   const lastSent = useRef("");
   const lastServer = useRef("");
   const transcriptRef = useRef("");
 
-  const updateTranscript = (value) => {
-    setTranscript(value);
-    transcriptRef.current = value;
-  };
+  // const updateTranscript = (value) => {
+  //   setTranscript(value);
+  //   transcriptRef.current = value;
+  // };
 
   // useEffect(() => {
   //   fetch(`${API_BASE}/transcript`)
@@ -71,7 +70,7 @@ export default function Speechbox() {
       <textarea
         rows={10}
         value={transcript}
-        onChange={(e) => updateTranscript(e.target.value)}
+        onChange={(e) => setTranscript(e.target.value)}
       />
     </div>
   );
