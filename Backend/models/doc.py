@@ -1,11 +1,15 @@
 import time
-from access import TOKEN
-
 import json
 from ibm_watsonx_ai import APIClient
 from ibm_watsonx_ai.foundation_models import ModelInference
 from ibm_watsonx_ai.metanames import GenTextParamsMetaNames as GenParams
 from ibm_watsonx_ai.foundation_models.utils.enums import DecodingMethods
+import dotenv
+import os
+
+dotenv.load_dotenv('.env')
+
+TOKEN = os.getenv('API_TOKEN')
 
 my_credentials = {
     "url": "https://us-south.ml.cloud.ibm.com",
