@@ -1,6 +1,10 @@
 # DocuScribe
 
+Note: Please ignore this branch until after May 13th as we are passed the deadline; updates to this branch will be merged to main after the competition is concluded
+
 Our submission to the Lean AI Solutions Hackathon, with IBM Granite Models, is a web application we call DocuScribe. This web application generates documentation for software projects from the source code and a verbal explanation of the project.
+
+![output](https://github.com/user-attachments/assets/740a5437-cbf2-4771-937a-cbdc037983d9)
 
 ## Models
 
@@ -18,5 +22,5 @@ Simply create an environment file (called `.env`) in the root directory with the
 - Python 3.11 or higher
 - Install packages from `requirements.txt` in `Backend/`
 - Node.js 22 or higher
-- Run `npm install` from `client/` directory
+- Run `npm install` from `frontend/` directory
 - ffmpeg is needed for the backend (changing sampling rate of audio)
