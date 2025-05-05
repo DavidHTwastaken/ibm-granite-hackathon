@@ -1,25 +1,9 @@
+import { set } from "lodash";
 import React, { useRef, useState } from "react";
 
-export default function ZipButton() {
+export default function ZipButton({ setZipFile }) {
   const fileInputRef = useRef();
   const [filename, setFilename] = useState("");
-
-  const handleFileChange = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    setFilename(file.name);
-
-    const formData = new FormData();
-    formData.append("file", file);
-
-    try {
-      const res = await fetch("/zip-file", { method: "POST", body: formData });
-      if (!res.ok) throw new Error(await res.text());
-      alert(`Uploaded ${file.name} successfully`);
-    } catch (err) {
-      alert("Upload failed: " + err.message);
-    }
-  };
 
   return (
     <div>
@@ -31,7 +15,7 @@ export default function ZipButton() {
         accept=".zip"
         ref={fileInputRef}
         style={{ display: "none" }}
-        onChange={handleFileChange}
+        onChange={(e) => setZipFile(e.target.files[0])}
       />
       {filename && (
         <div style={{ marginTop: 8 }}>

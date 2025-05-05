@@ -15,7 +15,6 @@ my_credentials = {
     "url": "https://us-south.ml.cloud.ibm.com",
     "api_key": TOKEN,
 }
-print(TOKEN)
 client = APIClient(my_credentials)
 
 gen_parms = {
@@ -39,7 +38,7 @@ model = ModelInference(
 def generate_doc(project, format='markdown', description=''):
     instruction = f'Create a {format} document explaining the following project. The format of the input will be the file path of a file, followed by its content, for each file in the project.'
     if len(description) > 0:
-        instruction += f'Here is some additional context: {description}'
+        instruction += f'Here is some additional context from the user: {description}'
     prompt = f'{instruction}\nInput:\n{project}'
     generated_text_response = model.generate_text(
         prompt=prompt, params=gen_parms)
