@@ -1,0 +1,94 @@
+body {
+  margin: 0;
+  font-family: 'Orbitron', sans-serif;
+  background: linear-gradient(145deg, #0f0f1f, #1a1a2e);
+  color: #f1f1f1;
+  min-height: 100vh;
+}
+
+button {
+  background-color: #1f1f3b;
+  color: #00fff7;
+  border: 1px solid #00fff7;
+  padding: 8px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: 0.3s ease;
+}
+
+button:hover {
+  background-color: #00fff7;
+  color: #0f0f1f;
+  box-shadow: 0 0 8px #00fff7;
+}
+
+textarea {
+  background-color: #101020;
+  color: #fff;
+  border: 1px solid #ff2fe6;
+  border-radius: 6px;
+  padding: 10px;
+  width: 100%;
+  resize: vertical;
+  font-family: inherit;
+}
+
+audio {
+  width: 100%;
+  margin-top: 10px;
+}
+
+/* body {
+  margin: 0;
+  font-family: 'Orbitron', sans-serif;
+  background: radial-gradient(circle at bottom, #0f0f1f 0%, #1a1a2e 60%, #0f0f1f 100%);
+  background-size: cover;
+  background-attachment: fixed;
+  color: #f1f1f1;
+  overflow-x: hidden;
+} */
+
+body {
+  background: linear-gradient(to bottom, #0f0f1f, #1a1a2e);
+  font-family: 'Orbitron', sans-serif;
+  color: #f1f1f1;
+}
+
+
+/* Optional retro grid at the bottom */
+body::before {
+  content: '';
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 40vh;
+  background-image: 
+    linear-gradient(#ff2fe6 1px, transparent 1px),
+    linear-gradient(to right, #ff2fe6 1px, transparent 1px);
+  background-size: 40px 40px;
+  opacity: 0.05;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* === Starfield Effect === */
+body::after {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: transparent url('https://i.ibb.co/vwy3H8h/stars-bg.png') repeat;
+  animation: starScroll 60s linear infinite;
+  opacity: 0.04;
+  z-index: -1;
+  pointer-events: none;
+}
+
+@keyframes starScroll {
+  from { background-position: 0 0; }
+  to { background-position: 0 1000px; }
+}
