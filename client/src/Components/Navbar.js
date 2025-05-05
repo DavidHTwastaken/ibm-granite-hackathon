@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 export function Navbar() {
   return (
     <nav style={styles.nav}>
-      <div style={styles.logo}>🔮 SynthSpace</div>
+      <div style={styles.logo}>🔮 DocuScribe</div>
       <div style={styles.links}>
         <Link to="/" style={styles.link}>Main</Link>
         <Link to="/about" style={styles.link}>About</Link>

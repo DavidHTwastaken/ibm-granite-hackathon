@@ -2,6 +2,7 @@ import {HashRouter as Router, Route, Routes} from "react-router-dom";
 import Main from "./Pages/Main";
 import About from "./Pages/About";
 import { Navbar } from "./Components/Navbar";
+import './App.css';
 
 function App() {
 
