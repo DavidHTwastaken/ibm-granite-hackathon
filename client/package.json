@@ -41,6 +41,7 @@
     ]
   },
   "devDependencies": {
-    "es-abstract": "^1.23.9"
+    "es-abstract": "^1.23.9",
+    "vite": "^6.3.4"
   }
 }
